@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ジャグラー 設定推測ツール</title>
+
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 15px;
+}
+.container {
+    max-width: 480px;
+    margin: auto;
+}
+h1 {
+    text-align: center;
+    font-size: 22px;
+    color: #d40000;
+}
+label {
+    display: block;
+    margin-top: 15px;
+    font-size: 16px;
+}
+select, input {
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    margin-top: 5px;
+}
+button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    font-size: 18px;
+    background: #d40000;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+}
+.result {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 16px;
+    line-height: 1.6;
+}
+.green { background:#e6ffe6; border:2px solid #2ecc71; }
+.yellow { background:#fffbe6; border:2px solid #f1c40f; }
+.red { background:#ffe6e6; border:2px solid #e74c3c; }
+.percent { font-size:24px; }
+.setting { font-weight:bold; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>🎰 ジャグラー設定推測</h1>
+
+<label>機種選択</label>
+<select id="type">
+    <option value="im">アイムジャグラーEX</option>
+    <option value="my">マイジャグラーⅤ</option>
+    <option value="funky">ファンキージャグラー2</option>
+    <option value="gogo">ゴーゴージャグラー3</option>
+    <option value="happy">ハッピージャグラーVⅢ</option>
+    <option value="miracle">スーパーミラクルジャグラー</option>
+    <option value="girls">ジャグラーガールズSS</option>
+</select>
+
+<label>総回転数</label>
+<input type="number" id="games">
+
+<label>BIG回数</label>
+<input type="number" id="big">
+
+<label>REG回数</label>
+<input type="number" id="reg">
+
+<button onclick="calc()">設定を推測</button>
+
+<div class="result" id="result"></div>
+
+</div>
+
+<script>
+function calc() {
+    const type = document.getElementById("type").value;
+    const g = Number(games.value);
+    const b = Number(big.value);
+    const r = Number(reg.value);
+
+    if (g <= 0 || b + r <= 0) {
+        result.innerText = "数値を正しく入力してください";
+        return;
+    }
+
+    const bigRate = g / b;
+    const regRate = g / r;
+    const totalRate = g / (b + r);
+
+    let percent = 0;
+
+
+    const regTable = {
+        im: [255, 275, 295],
+        my: [240, 260, 280],
+        funky: [255, 270, 290],
+        gogo: [260, 280, 300],
+        happy: [255, 275, 295],
+        miracle: [265, 285, 305],
+        girls: [250, 270, 290]
+    };
+
+    const t = regTable[type];
+    if (regRate <= t[0]) percent += 40;
+    else if (regRate <= t[1]) percent += 30;
+    else if (regRate <= t[2]) percent += 20;
+
+
+    if (totalRate <= 127) percent += 40;
+    else if (totalRate <= 130) percent += 30;
+    else if (totalRate <= 135) percent += 20;
+    else if (totalRate <= 145) percent += 10;
+
+
+    if (g >= 7000) percent += 20;
+    else if (g >= 5000) percent += 10;
+    else if (g < 3000) percent -= 20;
+
+    percent = Math.max(0, Math.min(95, percent));
+
+    let state = "red", stateText = "🔴 危険";
+    if (percent >= 60) { state="green"; stateText="🟢 続行"; }
+    else if (percent >= 30) { state="yellow"; stateText="🟡 様子見"; }
+
+    let setting =
+        percent >= 75 ? "設定6濃厚" :
+        percent >= 60 ? "設定5〜6" :
+        percent >= 45 ? "設定4〜5" :
+        percent >= 30 ? "設定3〜4" : "低設定寄り";
+
+    result.className = `result ${state}`;
+    result.innerHTML =
+        `BIG：1/${bigRate.toFixed(1)}<br>` +
+        `REG：1/${regRate.toFixed(1)}<br>` +
+        `合算：1/${totalRate.toFixed(1)}<hr>` +
+        `設定6期待度：<span class="percent">${percent}%</span><br>` +
+        `判定：<span class="setting">${setting}</span><br>` +
+        `状態：${stateText}`;
+}
+</script>
+
+</body>
+</html>
