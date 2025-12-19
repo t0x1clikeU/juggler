@@ -34,7 +34,7 @@ select, input {
 }
 button {
     width: 100%;
-    margin-top: 20px;
+    margin-top: 15px;
     padding: 14px;
     font-size: 18px;
     background: #d40000;
@@ -54,6 +54,13 @@ button {
 .red { background:#ffe6e6; border:2px solid #e74c3c; }
 .percent { font-size:24px; }
 .setting { font-weight:bold; }
+.hitlist {
+    margin-top: 10px;
+    font-size: 14px;
+    background: #fff;
+    padding: 10px;
+    border-radius: 6px;
+}
 </style>
 </head>
 
@@ -82,6 +89,18 @@ button {
 <label>REG回数</label>
 <input type="number" id="reg">
 
+<hr>
+
+<label>ボーナス当選入力</label>
+<input type="number" id="hitGame" placeholder="何ゲーム目？">
+<select id="hitType">
+    <option value="BIG">BIG</option>
+    <option value="REG">REG</option>
+</select>
+<button onclick="addHit()">当選を追加</button>
+
+<div id="hitList" class="hitlist"></div>
+
 <button onclick="calc()">設定を推測</button>
 
 <div class="result" id="result"></div>
@@ -89,6 +108,20 @@ button {
 </div>
 
 <script>
+let hits = [];
+
+function addHit() {
+    const game = Number(document.getElementById("hitGame").value);
+    const type = document.getElementById("hitType").value;
+    if (game <= 0) return;
+
+    hits.push({ game, type });
+    document.getElementById("hitGame").value = "";
+
+    document.getElementById("hitList").innerHTML =
+        hits.map((h, i) => `${i+1}. ${h.game}G ${h.type}`).join("<br>");
+}
+
 function calc() {
     const type = document.getElementById("type").value;
     const g = Number(games.value);
@@ -96,7 +129,7 @@ function calc() {
     const r = Number(reg.value);
 
     if (g <= 0 || b + r <= 0) {
-        result.innerText = "数値を正しく入力してください";
+        result.innerText = "数値を正しく入力しろ";
         return;
     }
 
@@ -105,7 +138,6 @@ function calc() {
     const totalRate = g / (b + r);
 
     let percent = 0;
-
 
     const regTable = {
         im: [255, 275, 295],
@@ -122,16 +154,26 @@ function calc() {
     else if (regRate <= t[1]) percent += 30;
     else if (regRate <= t[2]) percent += 20;
 
-
     if (totalRate <= 127) percent += 40;
     else if (totalRate <= 130) percent += 30;
     else if (totalRate <= 135) percent += 20;
     else if (totalRate <= 145) percent += 10;
 
-
     if (g >= 7000) percent += 20;
     else if (g >= 5000) percent += 10;
     else if (g < 3000) percent -= 20;
+
+    if (hits.length >= 3) {
+        const avg = hits.reduce((s, h) => s + h.game, 0) / hits.length;
+        const deep = hits.filter(h => h.game >= 400).length;
+        const regRatio = hits.filter(h => h.type === "REG").length / hits.length;
+
+        if (avg <= 150) percent += 15;
+        else if (avg >= 300) percent -= 10;
+
+        if (deep >= 2) percent -= 10;
+        if (regRatio >= 0.4) percent += 10;
+    }
 
     percent = Math.max(0, Math.min(95, percent));
 
@@ -145,11 +187,16 @@ function calc() {
         percent >= 45 ? "設定4〜5" :
         percent >= 30 ? "設定3〜4" : "低設定寄り";
 
+    const avgHit = hits.length
+        ? (hits.reduce((s, h) => s + h.game, 0) / hits.length).toFixed(1)
+        : "-";
+
     result.className = `result ${state}`;
     result.innerHTML =
         `BIG：1/${bigRate.toFixed(1)}<br>` +
         `REG：1/${regRate.toFixed(1)}<br>` +
         `合算：1/${totalRate.toFixed(1)}<hr>` +
+        `平均初当り：${avgHit}G<br>` +
         `設定6期待度：<span class="percent">${percent}%</span><br>` +
         `判定：<span class="setting">${setting}</span><br>` +
         `状態：${stateText}`;
